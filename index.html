@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#090B16">
+    <meta name="description" content="Discover worlds, explore adventures, and find your next game with Kinetix.">
+    <title>Kinetix | Discover Your Next Game</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="games.js" defer></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <header class="site-header">
+        <nav class="navbar" aria-label="Main navigation">
+            <a class="logo" href="#home" aria-label="Kinetix home">
+                <img src="assets/kinetix-wordmark.png" alt="">
+            </a>
+
+            <button
+                class="menu-toggle"
+                id="menuToggle"
+                type="button"
+                aria-label="Open navigation"
+                aria-expanded="false"
+                aria-controls="primaryNavigation"
+            >
+                <span></span><span></span><span></span>
+            </button>
+
+            <ul class="nav-links" id="primaryNavigation">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#featured">Featured</a></li>
+                <li><a href="#explore">Explore</a></li>
+                <li><a href="#categories">Categories</a></li>
+                <li><a href="#player">Player Hub</a></li>
+                <li><a href="#wishlist">Wishlist <span class="nav-count" id="navWishlistCount">0</span></a></li>
+                <li><a href="#about">About</a></li>
+            </ul>
+
+            <a class="nav-cta" href="#explore">Find a game</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero section-shell" id="home" aria-labelledby="heroTitle">
+            <div class="hero-copy">
+                <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true">✦</span> YOUR NEXT WORLD IS WAITING</p>
+                <h1 id="heroTitle">ENTER THE<br><span>GAMEVERSE</span></h1>
+                <p class="hero-description">
+                    Discover worlds. Explore adventures.<br class="desktop-break">
+                    Find your next game.
+                </p>
+
+                <form class="search-box" id="searchForm" role="search">
+                    <label class="sr-only" for="gameSearch">Search games by title, genre, or tag</label>
+                    <span class="search-icon" aria-hidden="true">⌕</span>
+                    <input
+                        type="search"
+                        id="gameSearch"
+                        name="gameSearch"
+                        placeholder="Search games, genres, or tags..."
+                        autocomplete="off"
+                    >
+                    <button class="button button-primary" type="submit">Search</button>
+                </form>
+
+                <a class="button button-outline hero-cta" href="#explore">Explore games <span aria-hidden="true">↓</span></a>
+            </div>
+            <div class="hero-art" aria-hidden="true">
+                <div class="hero-orbit orbit-one"></div>
+                <div class="hero-orbit orbit-two"></div>
+                <div class="hero-art-card">
+                    <img
+                        src="https://cdn.akamai.steamstatic.com/steam/apps/367520/header.jpg"
+                        alt=""
+                    >
+                    <span class="art-caption">A UNIVERSE OF PLAY</span>
+                </div>
+                <span class="pixel pixel-one"></span>
+                <span class="pixel pixel-two"></span>
+                <span class="pixel pixel-three"></span>
+            </div>
+        </section>
+
+        <section class="featured-section section-shell" id="featured" aria-labelledby="featuredTitle">
+            <div class="featured-game">
+                <div class="featured-content">
+                    <p class="eyebrow"><span class="eyebrow-mark" aria-hidden="true">✦</span> FEATURED WORLD</p>
+                    <h2 id="featuredTitle">Hollow Knight</h2>
+                    <p class="featured-description">
+                        Descend into a vast, ruined kingdom of insects and heroes.
+                        Explore winding caverns, uncover forgotten secrets, and
+                        face the creatures that haunt Hallownest.
+                    </p>
+                    <div class="featured-tags" aria-label="Game genres">
+                        <span>Adventure</span><span>Metroidvania</span><span>Indie</span>
+                    </div>
+                    <button class="button button-primary" id="featuredDetailsButton" type="button">
+                        Explore game <span aria-hidden="true">↗</span>
+                    </button>
+                </div>
+                <span class="featured-index" aria-hidden="true">01 / 60</span>
+            </div>
+        </section>
+
+        <section class="explore section-shell" id="explore" aria-labelledby="exploreTitle">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">YOUR NEXT FAVORITE STARTS HERE</p>
+                    <h2 id="exploreTitle">Trending games<span class="heading-dot">.</span></h2>
+                    <p>Hand-picked worlds worth getting lost in.</p>
+                </div>
+                <button class="button button-outline surprise-button" id="surpriseButton" type="button">
+                    <span aria-hidden="true">✧</span> Surprise me
+                </button>
+            </div>
+
+            <div class="discovery-toolbar">
+                <p id="resultsStatus" class="results-status" role="status" aria-live="polite"></p>
+                <div class="sort-control">
+                    <label for="sortGames">Sort by</label>
+                    <select id="sortGames" name="sortGames">
+                        <option value="az">Name: A–Z</option>
+                        <option value="za">Name: Z–A</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="catalog-summary">
+                <p class="catalog-total" id="catalogTotal"></p>
+                <div class="category-summary" id="categorySummary" aria-label="Games by category"></div>
+            </div>
+            <div class="game-grid" id="gameContainer" aria-live="polite"></div>
+            <button class="button button-outline load-more-button" id="loadMoreButton" type="button" hidden>Load more games</button>
+        </section>
+
+        <section class="categories-section section-shell" id="categories" aria-labelledby="categoriesTitle">
+            <div class="section-heading section-heading-centered">
+                <div>
+                    <p class="eyebrow">PICK YOUR PLAYSTYLE</p>
+                    <h2 id="categoriesTitle">Choose your universe<span class="heading-dot">.</span></h2>
+                    <p>Filter the collection and find your kind of adventure.</p>
+                </div>
+            </div>
+            <div class="category-container" id="categoryButtons" aria-label="Filter games by category"></div>
+        </section>
+
+        <section class="player-hub section-shell" id="player" aria-labelledby="playerTitle">
+            <div class="hub-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">YOUR LOCAL PLAYER PROFILE</p>
+                        <h2 id="playerTitle">Welcome back, <span id="gamerNameDisplay">Player One</span><span class="heading-dot">.</span></h2>
+                        <p>Your display name is saved for this browser's gamer tag. Gamer tags are identifiers, not accounts.</p>
+                    </div>
+                    <div class="profile-editor">
+                        <label for="gamerTagInput">Display name</label>
+                        <div class="profile-input-row">
+                            <input id="gamerTagInput" type="text" maxlength="24" placeholder="Choose a display name" autocomplete="nickname">
+                            <button class="button button-primary" id="saveGamerTag" type="button">Save name</button>
+                        </div>
+                        <p id="profileMessage" class="profile-message" role="status" aria-live="polite"></p>
+                    </div>
+                </div>
+                <div class="hub-stats" aria-label="Player statistics">
+                    <div class="hub-stat"><span id="hubTotalGames">0</span><p>Available games</p></div>
+                    <div class="hub-stat"><span id="hubWishlistGames">0</span><p>Saved games</p></div>
+                    <div class="hub-stat"><span id="hubCategories">0</span><p>Categories</p></div>
+                </div>
+                <p class="storage-message" id="storageMessage" role="status" aria-live="polite"></p>
+            </div>
+        </section>
+
+        <section class="wishlist-section section-shell" id="wishlist" aria-labelledby="wishlistTitle">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">YOUR PERSONAL COLLECTION</p>
+                    <h2 id="wishlistTitle">Wishlist<span class="heading-dot">.</span></h2>
+                    <p>Your next adventures, saved in one place.</p>
+                </div>
+                <p class="wishlist-count"><span id="wishlistCount">0</span> saved</p>
+            </div>
+            <div class="game-grid" id="wishlistContainer"></div>
+        </section>
+
+        <section class="about-section section-shell" id="about" aria-labelledby="aboutTitle">
+            <p class="eyebrow">WELCOME TO KINETIX</p>
+            <h2 id="aboutTitle">A new world is one click away<span class="heading-dot">.</span></h2>
+            <p>Kinetix is a locally powered game discovery demo made to help you find your next favorite adventure.</p>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <a class="logo" href="#home">
+            <img src="assets/kinetix-wordmark.png" alt="Kinetix">
+        </a>
+        <p>Discover worlds. Explore adventures. Find your next game.</p>
+        <a href="#home">Back to top ↑</a>
+        <small>© <span id="currentYear"></span> Kinetix. Demo project.</small>
+    </footer>
+
+    <div class="game-modal" id="gameModal" aria-hidden="true">
+        <div class="modal-backdrop" data-close-modal></div>
+        <section class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDescription">
+            <button class="modal-close" id="closeModal" type="button" aria-label="Close game details">×</button>
+            <img id="modalImage" src="" alt="">
+            <div class="modal-info">
+                <p class="modal-category" id="modalCategory"></p>
+                <h2 id="modalTitle"></h2>
+                <p class="modal-genre" id="modalGenre"></p>
+                <p class="modal-description" id="modalDescription"></p>
+                <div class="modal-tags" id="modalTags" aria-label="Game tags"></div>
+                <a class="button button-primary" id="modalLink" href="#" target="_blank" rel="noopener noreferrer">Visit game store <span aria-hidden="true">↗</span></a>
+            </div>
+        </section>
+    </div>
+</body>
+</html>
