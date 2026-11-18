@@ -33,6 +33,7 @@ const elements = {
 
 let selectedCategory = "All";
 let visibleGameCount = 12;
+const API_BASE_URL = "http://localhost:5000/api";
 const pageSize = 12;
 const legacyWishlistKey = "kinetixWishlist";
 const wishlistMigrationKey = "kinetixWishlistBackendMigrationV1";
@@ -41,10 +42,12 @@ let wishlist = [];
 const legacyWishlist = loadLegacyWishlist();
 let wishlistLoadVersion = 0;
 let modalTrigger = null;
-const gamerTag = loadGamerTag();
-let savedDisplayName = gamerTag;
+let savedDisplayName = "Player One";
 let profileLoadVersion = 0;
 let profileSavePending = false;
+let supabaseClient = null;
+let supabaseInitialization = null;
+let startupPromise = null;
 
 function findGameById(id) {
     return games.find(game => game.id === id);
@@ -64,7 +67,8 @@ function setStorageMessage(message) {
 
 function clearWishlistError() {
     const message = elements.storageMessage.textContent;
-    if (message === "Could not sync your wishlist with the backend. Please try again." ||
+    if (message === "Loading your wishlist..." ||
+        message === "Could not sync your wishlist with the backend. Please try again." ||
         message === "Could not update your wishlist. Please try again.") {
         setStorageMessage("");
     }
@@ -130,16 +134,79 @@ function loadLegacyWishlist() {
     }
 }
 
-function loadGamerTag() {
-    return readStorage("kinetixGamerTag") || "Player One";
-}
-
 function isValidDisplayName(name) {
     return typeof name === "string" && name.trim().length > 0 && name.trim().length <= 24;
 }
 
+function initializeSupabase() {
+    if (!supabaseInitialization) {
+        supabaseInitialization = (async function() {
+            const response = await fetch(`${API_BASE_URL}/config`);
+            const config = await response.json();
+            if (!response.ok ||
+                typeof config.supabaseUrl !== "string" ||
+                typeof config.supabasePublishableKey !== "string") {
+                throw new Error("Supabase configuration is unavailable.");
+            }
+            if (!window.supabase || typeof window.supabase.createClient !== "function") {
+                throw new Error("The Supabase JavaScript client could not be loaded.");
+            }
+
+            supabaseClient = window.supabase.createClient(
+                config.supabaseUrl,
+                config.supabasePublishableKey,
+                {
+                    auth: {
+                        persistSession: true,
+                        autoRefreshToken: true,
+                        detectSessionInUrl: false
+                    }
+                }
+            );
+
+            const { data, error } = await supabaseClient.auth.getSession();
+            if (error) {
+                throw error;
+            }
+
+            if (!data.session) {
+                const { error: signInError } = await supabaseClient.auth.signInAnonymously();
+                if (signInError) {
+                    throw signInError;
+                }
+            }
+
+            return supabaseClient;
+        })();
+    }
+
+    return supabaseInitialization;
+}
+
+async function authenticatedFetch(url, options) {
+    await initializeSupabase();
+    if (!supabaseClient) {
+        throw new Error("Authentication has not been initialized.");
+    }
+
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) {
+        throw error;
+    }
+    if (!data.session || !data.session.access_token) {
+        throw new Error("Your session is unavailable. Please reload the page.");
+    }
+
+    const headers = new Headers(options && options.headers ? options.headers : {});
+    headers.set("Authorization", `Bearer ${data.session.access_token}`);
+    return fetch(url, {
+        ...options,
+        headers
+    });
+}
+
 function getProfileUrl() {
-    return `${API_BASE_URL}/profile/${encodeURIComponent(gamerTag)}`;
+    return `${API_BASE_URL}/profile`;
 }
 
 async function parseProfileResponse(response, errorMessage) {
@@ -156,17 +223,17 @@ async function loadProfileFromBackend() {
     const initialInputValue = elements.profileInput.value;
 
     try {
-        const response = await fetch(getProfileUrl());
+        const response = await authenticatedFetch(getProfileUrl());
         const profile = await parseProfileResponse(response, "Could not load your profile.");
         if (requestVersion !== profileLoadVersion) {
             return;
         }
 
         if (profile === null) {
-            savedDisplayName = gamerTag;
+            savedDisplayName = "Player One";
             elements.profileName.textContent = savedDisplayName;
             if (elements.profileInput.value === initialInputValue) {
-                elements.profileInput.value = gamerTag === "Player One" ? "" : gamerTag;
+                elements.profileInput.value = "";
             }
         } else {
             if (!profile || !isValidDisplayName(profile.displayName)) {
@@ -220,15 +287,15 @@ async function parseWishlistResponse(response, errorMessage) {
     return normalizeBackendWishlist(result.gameIds);
 }
 
-function getWishlistUrl(gamerTag) {
-    return `${API_BASE_URL}/wishlist/${encodeURIComponent(gamerTag)}`;
+function getWishlistUrl() {
+    return `${API_BASE_URL}/wishlist`;
 }
 
 async function loadWishlistFromBackend() {
     const requestVersion = ++wishlistLoadVersion;
 
     try {
-        const response = await fetch(getWishlistUrl(gamerTag));
+        const response = await authenticatedFetch(getWishlistUrl());
         const backendWishlist = await parseWishlistResponse(response, "Could not load the wishlist.");
         if (requestVersion !== wishlistLoadVersion) {
             return;
@@ -246,7 +313,7 @@ async function loadWishlistFromBackend() {
                 continue;
             }
 
-            const migrationResponse = await fetch(getWishlistUrl(gamerTag), {
+            const migrationResponse = await authenticatedFetch(getWishlistUrl(), {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -495,10 +562,10 @@ async function toggleWishlist(gameId, button) {
 
     try {
         const response = shouldRemove
-            ? await fetch(getWishlistUrl(gamerTag) + "/" + encodeURIComponent(gameId), {
+            ? await authenticatedFetch(getWishlistUrl() + "/" + encodeURIComponent(gameId), {
                 method: "DELETE"
             })
-            : await fetch(getWishlistUrl(gamerTag), {
+            : await authenticatedFetch(getWishlistUrl(), {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -612,7 +679,7 @@ async function saveProfileName() {
     elements.profileMessage.textContent = "Saving your display name...";
 
     try {
-        const response = await fetch(getProfileUrl(), {
+        const response = await authenticatedFetch(getProfileUrl(), {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json"
@@ -770,19 +837,10 @@ document.getElementById("featuredDetailsButton").addEventListener("click", funct
 });
 
 elements.profileName.textContent = savedDisplayName;
-if (gamerTag !== "Player One") {
-    elements.profileInput.value = gamerTag;
-}
 document.getElementById("currentYear").textContent = String(new Date().getFullYear());
 renderCategories();
 renderAll();
 setActiveNavigation();
-
-
-
-const API_BASE_URL = "http://localhost:5000/api";
-
-loadProfileFromBackend();
 
 async function loadGamesFromBackend() {
     try {
@@ -796,7 +854,6 @@ async function loadGamesFromBackend() {
         games = result.games;
         renderCategories();
         renderAll();
-        await loadWishlistFromBackend();
 
         console.log("🎮 Games loaded from backend:", games.length);
 
@@ -808,5 +865,31 @@ async function loadGamesFromBackend() {
         );
     }
 }
-// Start loading games
-loadGamesFromBackend();
+
+function startApp() {
+    if (!startupPromise) {
+        startupPromise = (async function() {
+            elements.profileMessage.textContent = "Connecting to your player profile...";
+            if (!elements.storageMessage.textContent) {
+                setStorageMessage("Loading your wishlist...");
+            }
+            elements.resultsStatus.textContent = "Loading games...";
+            const gamesPromise = loadGamesFromBackend();
+            try {
+                await initializeSupabase();
+                await loadProfileFromBackend();
+                await gamesPromise;
+                await loadWishlistFromBackend();
+            } catch (error) {
+                elements.profileMessage.textContent = "Could not sign in. Please refresh the page to try again.";
+                setStorageMessage("Your profile and wishlist are unavailable until sign-in succeeds.");
+                console.error("Supabase authentication failed:", error.message);
+                await gamesPromise;
+            }
+        })();
+    }
+
+    return startupPromise;
+}
+
+startApp();

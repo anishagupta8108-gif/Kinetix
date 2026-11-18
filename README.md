@@ -6,7 +6,7 @@ Kinetix is a gaming discovery website for browsing a curated game collection. It
 
 - HTML, CSS, and vanilla JavaScript
 - Node.js and Express
-- Local JSON storage for games, wishlists, and player profiles
+- Supabase PostgreSQL and anonymous Supabase Auth sessions
 
 ## Project structure
 
@@ -22,14 +22,19 @@ kinetix/
     ├── package.json           # Backend scripts and dependencies
     ├── package-lock.json      # Locked dependency versions
     └── data/
-        ├── store.example.json # Clean starter game collection
-        └── store.json         # Local games and user data (not committed)
+        ├── store.example.json # Local backup catalogue
+        ├── store.json         # Local data backup (not used by the API)
+        └── seed-games.sql     # Manual catalogue seed script
 ```
 
 ## Requirements
 
 - Node.js 18.11 or later
 - A modern web browser
+- A Supabase project with the `games`, `profiles`, and `wishlist_items` tables and the existing owner-only RLS policies
+- Anonymous sign-in enabled in Supabase Auth
+
+Create `backend/.env` with `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and optionally `PORT`. Use only the publishable key; never put a service-role or secret key in this file or the frontend.
 
 ## Install and start the backend
 
@@ -52,7 +57,7 @@ For a normal start without file watching:
 npm.cmd start
 ```
 
-The API listens at `http://localhost:5000`. The first run creates `backend/data/store.json` from `store.example.json` only if no local store already exists. Existing local store data is not replaced.
+The API listens at `http://localhost:5000`. Games, profiles, and wishlists are read from or written to Supabase. The local JSON files are retained as backups and are not read or overwritten by the API.
 
 ## Launch the frontend
 
@@ -63,17 +68,18 @@ With the backend running, open `index.html` in a browser. You can also use a loc
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/health` | Check that the backend is running |
+| `GET` | `/api/config` | Return the public Supabase URL and publishable key for browser initialization |
 | `GET` | `/api/games` | Get games; optional `search`, `category`, and `sort=asc` or `sort=desc` query parameters |
-| `GET` | `/api/wishlist/:gamerTag` | Get a player's saved game IDs |
-| `POST` | `/api/wishlist/:gamerTag` | Add a game with JSON body `{ "gameId": "game-id" }` |
-| `DELETE` | `/api/wishlist/:gamerTag/:gameId` | Remove a game from a player's wishlist |
-| `GET` | `/api/profile/:gamerTag` | Get a player's profile |
-| `PUT` | `/api/profile/:gamerTag` | Save a display name with JSON body `{ "displayName": "Player Name" }` |
+| `GET` | `/api/wishlist` | Get the authenticated player's saved game IDs |
+| `POST` | `/api/wishlist` | Add a game with JSON body `{ "gameId": "game-id" }` |
+| `DELETE` | `/api/wishlist/:gameId` | Remove a game from the authenticated player's wishlist |
+| `GET` | `/api/profile` | Get the authenticated player's profile |
+| `PUT` | `/api/profile` | Save a display name with JSON body `{ "displayName": "Player Name" }` |
 
-Game search and categories can also be used from the website's interface. Profile display names must be between 1 and 24 characters.
+Profile and wishlist endpoints require `Authorization: Bearer <access-token>`. The frontend creates an anonymous Supabase session when needed and reuses the browser-persisted session. Display names must contain 1–24 non-whitespace characters.
 
 ## Data and limitations
 
-The backend stores the game catalog, wishlists, and profiles in `backend/data/store.json`. That file is local user data and is excluded by `.gitignore`; the clean `store.example.json` keeps the 60-game catalog available to fresh installations.
+`backend/data/store.example.json` and `backend/data/store.json` remain available as local backups. They are not imported automatically. `backend/data/seed-games.sql` is provided for manual execution in the Supabase SQL Editor.
 
-Gamer tags are identifiers only. Kinetix does not currently have secure authentication, passwords, or account ownership checks. JSON storage is intended for one local development server, not concurrent production instances. The API should not be exposed publicly as an authenticated service.
+Anonymous sessions are browser-specific and do not provide account recovery or cross-device identity. RLS policies remain responsible for enforcing user ownership in Supabase.
