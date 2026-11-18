@@ -33,7 +33,12 @@ const elements = {
 
 let selectedCategory = "All";
 let visibleGameCount = 12;
-const API_BASE_URL = "http://localhost:5000/api";
+const isLocalDevelopment = window.location.protocol === "file:" ||
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+const API_BASE_URL = isLocalDevelopment
+    ? "http://localhost:5000/api"
+    : "https://kinetix-3plu.onrender.com/api";
 const pageSize = 12;
 const legacyWishlistKey = "kinetixWishlist";
 const wishlistMigrationKey = "kinetixWishlistBackendMigrationV1";
