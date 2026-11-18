@@ -34,7 +34,9 @@ kinetix/
 - A Supabase project with the `games`, `profiles`, and `wishlist_items` tables and the existing owner-only RLS policies
 - Anonymous sign-in enabled in Supabase Auth
 
-Create `backend/.env` with `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and optionally `PORT`. Use only the publishable key; never put a service-role or secret key in this file or the frontend.
+Create `backend/.env` with `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and optionally `PORT` and `CORS_ALLOWED_ORIGINS`. Use only the publishable key; never put a service-role or secret key in this file or the frontend.
+
+For production deployment, set `CORS_ALLOWED_ORIGINS` in the hosting platform's environment settings to a comma-separated list of the exact frontend origins allowed to call the API. Separate multiple origins with commas; whitespace around entries is ignored. Use origins only (scheme and host, with an optional port), not paths, and do not use `*`. Localhost and `127.0.0.1` development origins remain allowed automatically. Requests without an `Origin` header are also allowed.
 
 ## Install and start the backend
 

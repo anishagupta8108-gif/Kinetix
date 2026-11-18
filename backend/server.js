@@ -26,10 +26,23 @@ const localOrigins = [
     /^https?:\/\/localhost(?::\d+)?$/,
     /^https?:\/\/127\.0\.0\.1(?::\d+)?$/
 ];
+const configuredOrigins = new Set(
+    (process.env.CORS_ALLOWED_ORIGINS || "")
+        .split(",")
+        .map(origin => origin.trim())
+        .filter(Boolean)
+);
 
 app.use(cors({
     origin(origin, callback) {
-        callback(null, !origin || localOrigins.some(allowed => allowed.test(origin)));
+        if (!origin || localOrigins.some(allowed => allowed.test(origin)) || configuredOrigins.has(origin)) {
+            return callback(null, true);
+        }
+
+        const error = new Error("Origin is not allowed by CORS.");
+        error.status = 403;
+        error.code = "CORS_ORIGIN_DENIED";
+        callback(error);
     }
 }));
 app.use(express.json({ limit: "16kb" }));
@@ -328,6 +341,13 @@ app.use((error, req, res, next) => {
     console.error("API request failed:", error.message);
     if (res.headersSent) {
         return next(error);
+    }
+
+    if (error.code === "CORS_ORIGIN_DENIED") {
+        return res.status(403).json({
+            success: false,
+            message: "Origin is not allowed by CORS."
+        });
     }
 
     const status = Number.isInteger(error.status) && error.status >= 400 && error.status < 500
